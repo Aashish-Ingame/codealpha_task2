@@ -1,0 +1,308 @@
+{% extends "base.html" %}
+
+{% block title %}Explore People · Nexus{% endblock %}
+{% block meta_description %}Discover and connect with people on Nexus.{% endblock %}
+
+{% block extra_head %}
+<style>
+  /* ─── Explore page ───────────────────────────────────────────── */
+  .explore-page {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 40px 24px 72px;
+  }
+
+  /* Header */
+  .explore-hero {
+    text-align: center;
+    padding: 24px 0 40px;
+    animation: slideUp .4s cubic-bezier(.4,0,.2,1) both;
+  }
+
+  .explore-hero__icon {
+    font-size: 3.5rem;
+    line-height: 1;
+    margin-bottom: 16px;
+    display: block;
+  }
+
+  .explore-hero__title {
+    font-family: 'DM Serif Display', Georgia, serif;
+    font-size: 2.25rem;
+    color: var(--text);
+    margin-bottom: 8px;
+    background: linear-gradient(135deg, var(--accent-light), var(--accent));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .explore-hero__sub {
+    font-size: 1rem;
+    color: var(--muted);
+    max-width: 360px;
+    margin: 0 auto;
+  }
+
+  /* Stats bar */
+  .explore-stats {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 12px;
+    padding: 6px 16px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 9999px;
+    font-size: .8125rem;
+    color: var(--muted);
+  }
+
+  .explore-stats strong { color: var(--accent-light); font-weight: 700; }
+
+  /* User grid */
+  .users-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(268px, 1fr));
+    gap: 16px;
+  }
+
+  /* User card */
+  .user-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    transition: border-color .2s ease, transform .2s ease, box-shadow .2s ease;
+    animation: fadeIn .3s ease both;
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* Subtle top glow on hover */
+  .user-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse 80% 60% at 50% -20%, rgba(124,58,237,.08) 0%, transparent 70%);
+    opacity: 0;
+    transition: opacity .3s ease;
+    pointer-events: none;
+  }
+
+  .user-card:hover {
+    border-color: rgba(124,58,237,.45);
+    transform: translateY(-3px);
+    box-shadow: 0 10px 30px rgba(0,0,0,.35);
+  }
+  .user-card:hover::before { opacity: 1; }
+
+  @keyframes fadeIn  { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:none; } }
+  @keyframes slideUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:none; } }
+
+  /* Card header */
+  .user-card-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .avatar {
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), #4F46E5);
+    color: #fff;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    flex-shrink: 0;
+    text-transform: uppercase;
+  }
+  .avatar img { width:100%; height:100%; object-fit:cover; display:block; }
+  .avatar--lg { width: 56px; height: 56px; font-size: 1.375rem; }
+
+  .user-card-info { flex: 1; min-width: 0; }
+
+  .user-card-name {
+    font-weight: 700;
+    font-size: 1rem;
+    color: var(--text);
+    line-height: 1.3;
+  }
+
+  .user-card-name a {
+    color: var(--text);
+    text-decoration: none;
+    transition: color .2s ease;
+  }
+  .user-card-name a:hover { color: var(--accent-light); }
+
+  .user-card-handle {
+    font-size: .8125rem;
+    color: var(--muted);
+  }
+
+  /* Bio */
+  .user-card-bio {
+    font-size: .875rem;
+    color: var(--text);
+    opacity: .8;
+    line-height: 1.6;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    min-height: 2.8em;
+  }
+
+  /* Stats */
+  .user-card-stats {
+    font-size: .8125rem;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .user-card-stats strong { color: var(--text); font-weight: 700; }
+
+  /* Follow button */
+  .btn-follow-card {
+    display: block;
+    width: 100%;
+    padding: 10px;
+    border-radius: var(--radius-sm);
+    font-size: .875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all .2s ease;
+    font-family: inherit;
+    border: none;
+    text-align: center;
+  }
+
+  .btn-follow-card--follow {
+    background: var(--accent);
+    color: #fff;
+  }
+  .btn-follow-card--follow:hover {
+    background: var(--accent-hover);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 14px rgba(124,58,237,.4);
+  }
+
+  .btn-follow-card--following {
+    background: var(--surface-2);
+    color: var(--muted);
+    border: 1px solid var(--border);
+  }
+  .btn-follow-card--following:hover {
+    background: rgba(248,113,113,.1);
+    color: var(--error);
+    border-color: var(--error);
+  }
+
+  /* Empty state */
+  .explore-empty {
+    text-align: center;
+    padding: 80px 32px;
+    color: var(--muted);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+  }
+
+  /* Responsive */
+  @media (max-width: 640px) {
+    .users-grid { grid-template-columns: 1fr; }
+    .explore-page { padding: 24px 16px 48px; }
+    .explore-hero__title { font-size: 1.75rem; }
+  }
+</style>
+{% endblock %}
+
+
+{% block content %}
+<div class="explore-page">
+
+  {# ── Hero ────────────────────────────────────────────────────── #}
+  <div class="explore-hero">
+    <span class="explore-hero__icon" aria-hidden="true">🌐</span>
+    <h1 class="explore-hero__title">Explore People</h1>
+    <p class="explore-hero__sub">Discover interesting people to connect with on Nexus.</p>
+    <div class="explore-stats">
+      <strong>{{ users|length }}</strong> people to explore
+    </div>
+  </div>
+
+  {# ── Grid ────────────────────────────────────────────────────── #}
+  {% if users %}
+  <div class="users-grid" role="list" aria-label="People on Nexus">
+    {% for u in users %}
+    <article class="user-card" role="listitem">
+
+      <div class="user-card-header">
+        <a href="{% url 'core:profile' u.username %}" class="avatar avatar--lg" aria-label="View {{ u.username }}'s profile">
+          {% if u.profile and u.profile.avatar %}
+            <img src="{{ u.profile.avatar.url }}" alt="{{ u.username }}" />
+          {% else %}
+            {{ u.username|first }}
+          {% endif %}
+        </a>
+        <div class="user-card-info">
+          <div class="user-card-name">
+            <a href="{% url 'core:profile' u.username %}">
+              {{ u.get_full_name|default:u.username }}
+            </a>
+          </div>
+          <div class="user-card-handle">@{{ u.username }}</div>
+        </div>
+      </div>
+
+      <p class="user-card-bio">
+        {% if u.profile.bio %}
+          {{ u.profile.bio }}
+        {% else %}
+          <span style="font-style:italic;color:var(--muted);">No bio yet.</span>
+        {% endif %}
+      </p>
+
+      <div class="user-card-stats">
+        <strong>{{ u.follower_count }}</strong>
+        follower{{ u.follower_count|pluralize }}
+      </div>
+
+      <form method="post" action="{% url 'core:follow_toggle' u.username %}">
+        {% csrf_token %}
+        {% if u.id in following_ids %}
+          <button
+            type="submit"
+            class="btn-follow-card btn-follow-card--following"
+            aria-label="Unfollow {{ u.username }}"
+          >Following</button>
+        {% else %}
+          <button
+            type="submit"
+            class="btn-follow-card btn-follow-card--follow"
+            aria-label="Follow {{ u.username }}"
+          >Follow</button>
+        {% endif %}
+      </form>
+
+    </article>
+    {% endfor %}
+  </div>
+
+  {% else %}
+  <div class="explore-empty" role="status">
+    <div style="font-size:3rem;margin-bottom:16px;" aria-hidden="true">👥</div>
+    <h2 style="font-size:1.25rem;font-weight:700;color:var(--text);margin-bottom:8px;">No other users yet</h2>
+    <p>Be the first to invite your friends to Nexus!</p>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

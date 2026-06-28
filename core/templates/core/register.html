@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+
+{% block title %}Create account · Nexus{% endblock %}
+{% block meta_description %}Join Nexus today — create your account and start connecting.{% endblock %}
+
+{% block content %}
+<section class="auth-wrapper" aria-labelledby="register-heading">
+  <article class="auth-card">
+
+    <span class="auth-card__logo" aria-hidden="true">Nexus</span>
+    <h1 class="auth-card__title" id="register-heading">Join Nexus</h1>
+    <p class="auth-card__sub">Create your account — it's free.</p>
+
+    {% if form.non_field_errors %}
+      <div class="alert-error" role="alert">
+        {% for error in form.non_field_errors %}
+          <p>{{ error }}</p>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    <form method="post" action="{% url 'core:register' %}" novalidate>
+      {% csrf_token %}
+
+      <!-- Username -->
+      <div class="form-group">
+        <label class="form-label" for="{{ form.username.id_for_label }}">Username</label>
+        <input
+          type="text"
+          id="{{ form.username.id_for_label }}"
+          name="{{ form.username.html_name }}"
+          class="form-control {% if form.username.errors %}is-invalid{% endif %}"
+          value="{{ form.username.value|default:'' }}"
+          autocomplete="username"
+          placeholder="your_handle"
+          required
+          aria-describedby="{% if form.username.errors %}username-errors{% endif %}"
+        />
+        {% if form.username.errors %}
+          <ul class="error-list" id="username-errors" role="alert">
+            {% for error in form.username.errors %}<li>{{ error }}</li>{% endfor %}
+          </ul>
+        {% endif %}
+      </div>
+
+      <!-- Email -->
+      <div class="form-group">
+        <label class="form-label" for="{{ form.email.id_for_label }}">Email</label>
+        <input
+          type="email"
+          id="{{ form.email.id_for_label }}"
+          name="{{ form.email.html_name }}"
+          class="form-control {% if form.email.errors %}is-invalid{% endif %}"
+          value="{{ form.email.value|default:'' }}"
+          autocomplete="email"
+          placeholder="you@example.com"
+          required
+          aria-describedby="{% if form.email.errors %}email-errors{% endif %}"
+        />
+        {% if form.email.errors %}
+          <ul class="error-list" id="email-errors" role="alert">
+            {% for error in form.email.errors %}<li>{{ error }}</li>{% endfor %}
+          </ul>
+        {% endif %}
+      </div>
+
+      <!-- Password -->
+      <div class="form-group">
+        <label class="form-label" for="{{ form.password1.id_for_label }}">Password</label>
+        <input
+          type="password"
+          id="{{ form.password1.id_for_label }}"
+          name="{{ form.password1.html_name }}"
+          class="form-control {% if form.password1.errors %}is-invalid{% endif %}"
+          autocomplete="new-password"
+          placeholder="••••••••"
+          required
+          aria-describedby="{% if form.password1.errors %}password1-errors{% endif %}"
+        />
+        {% if form.password1.errors %}
+          <ul class="error-list" id="password1-errors" role="alert">
+            {% for error in form.password1.errors %}<li>{{ error }}</li>{% endfor %}
+          </ul>
+        {% endif %}
+      </div>
+
+      <!-- Confirm Password -->
+      <div class="form-group">
+        <label class="form-label" for="{{ form.password2.id_for_label }}">Confirm Password</label>
+        <input
+          type="password"
+          id="{{ form.password2.id_for_label }}"
+          name="{{ form.password2.html_name }}"
+          class="form-control {% if form.password2.errors %}is-invalid{% endif %}"
+          autocomplete="new-password"
+          placeholder="••••••••"
+          required
+          aria-describedby="{% if form.password2.errors %}password2-errors{% endif %}"
+        />
+        {% if form.password2.errors %}
+          <ul class="error-list" id="password2-errors" role="alert">
+            {% for error in form.password2.errors %}<li>{{ error }}</li>{% endfor %}
+          </ul>
+        {% endif %}
+      </div>
+
+      <button type="submit" class="btn btn--primary btn--full" id="register-submit">
+        Create account
+      </button>
+    </form>
+
+    <p class="auth-card__footer">
+      Already have an account?
+      <a href="{% url 'core:login' %}">Log in</a>
+    </p>
+
+  </article>
+</section>
+{% endblock %}

@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+
+{% block title %}Log in · Nexus{% endblock %}
+{% block meta_description %}Log in to your Nexus account and continue connecting.{% endblock %}
+
+{% block content %}
+<section class="auth-wrapper" aria-labelledby="login-heading">
+  <article class="auth-card">
+
+    <span class="auth-card__logo" aria-hidden="true">Nexus</span>
+    <h1 class="auth-card__title" id="login-heading">Welcome back</h1>
+    <p class="auth-card__sub">Sign in to continue to Nexus.</p>
+
+    {% if form.non_field_errors %}
+      <div class="alert-error" role="alert">
+        {% for error in form.non_field_errors %}
+          <p>{{ error }}</p>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    <form method="post" action="{% url 'core:login' %}" novalidate>
+      {% csrf_token %}
+
+      <!-- Username -->
+      <div class="form-group">
+        <label class="form-label" for="{{ form.username.id_for_label }}">Username</label>
+        <input
+          type="text"
+          id="{{ form.username.id_for_label }}"
+          name="{{ form.username.html_name }}"
+          class="form-control {% if form.username.errors %}is-invalid{% endif %}"
+          value="{{ form.username.value|default:'' }}"
+          autocomplete="username"
+          placeholder="your_handle"
+          required
+          aria-describedby="{% if form.username.errors %}login-username-errors{% endif %}"
+        />
+        {% if form.username.errors %}
+          <ul class="error-list" id="login-username-errors" role="alert">
+            {% for error in form.username.errors %}<li>{{ error }}</li>{% endfor %}
+          </ul>
+        {% endif %}
+      </div>
+
+      <!-- Password -->
+      <div class="form-group">
+        <label class="form-label" for="{{ form.password.id_for_label }}">Password</label>
+        <input
+          type="password"
+          id="{{ form.password.id_for_label }}"
+          name="{{ form.password.html_name }}"
+          class="form-control {% if form.password.errors %}is-invalid{% endif %}"
+          autocomplete="current-password"
+          placeholder="••••••••"
+          required
+          aria-describedby="{% if form.password.errors %}login-password-errors{% endif %}"
+        />
+        {% if form.password.errors %}
+          <ul class="error-list" id="login-password-errors" role="alert">
+            {% for error in form.password.errors %}<li>{{ error }}</li>{% endfor %}
+          </ul>
+        {% endif %}
+      </div>
+
+      <button type="submit" class="btn btn--primary btn--full" id="login-submit">
+        Log in
+      </button>
+    </form>
+
+    <p class="auth-card__footer">
+      New to Nexus?
+      <a href="{% url 'core:register' %}">Create an account</a>
+    </p>
+
+  </article>
+</section>
+{% endblock %}

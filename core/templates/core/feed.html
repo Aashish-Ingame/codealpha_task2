@@ -1,0 +1,812 @@
+{% extends "base.html" %}
+{% load custom_filters %}
+
+{% block title %}Feed · Nexus{% endblock %}
+{% block meta_description %}Your personalised Nexus feed — posts from people you follow.{% endblock %}
+
+{% block extra_head %}
+<style>
+  /* ─── Layout ─────────────────────────────────────────────────── */
+  .feed-wrapper {
+    padding: 32px 24px 64px;
+    max-width: 940px;
+    margin: 0 auto;
+  }
+
+  .feed-grid {
+    display: grid;
+    grid-template-columns: 280px minmax(0, 600px);
+    gap: 32px;
+    align-items: start;
+  }
+
+  /* ─── Sidebar ────────────────────────────────────────────────── */
+  .sidebar {
+    position: sticky;
+    top: 80px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .sidebar-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 20px;
+  }
+
+  .sidebar-heading {
+    font-size: 0.6875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--muted);
+    margin-bottom: 14px;
+  }
+
+  /* Profile block */
+  .profile-block {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  .profile-name {
+    font-weight: 600;
+    font-size: 0.9375rem;
+    color: var(--text);
+    line-height: 1.3;
+  }
+
+  .profile-handle {
+    font-size: 0.8125rem;
+    color: var(--muted);
+  }
+
+  /* Stats */
+  .stats-row {
+    display: flex;
+    gap: 0;
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 16px;
+  }
+
+  .stat {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 12px 8px;
+    gap: 2px;
+  }
+
+  .stat + .stat { border-left: 1px solid var(--border); }
+
+  .stat-value {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--text);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .stat-label {
+    font-size: 0.6875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--muted);
+  }
+
+  /* Suggested users */
+  .suggested-user {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+    animation: fadeIn .25s ease both;
+  }
+
+  .suggested-user:last-child { border-bottom: none; padding-bottom: 0; }
+
+  .suggested-user-info { flex: 1; min-width: 0; }
+
+  .suggested-username {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .suggested-handle {
+    font-size: 0.75rem;
+    color: var(--muted);
+  }
+
+  /* ─── Avatar ─────────────────────────────────────────────────── */
+  .avatar {
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent) 0%, #4F46E5 100%);
+    color: #fff;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    flex-shrink: 0;
+    text-transform: uppercase;
+    user-select: none;
+  }
+
+  .avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .avatar--sm  { width: 30px;  height: 30px;  font-size: 0.75rem; }
+  .avatar--md  { width: 40px;  height: 40px;  font-size: 1rem; }
+  .avatar--lg  { width: 48px;  height: 48px;  font-size: 1.125rem; }
+
+  /* ─── Buttons ─────────────────────────────────────────────────── */
+  .btn--sm { padding: 6px 14px; font-size: 0.8125rem; }
+
+  .btn--follow {
+    background: transparent;
+    border: 1px solid var(--accent);
+    color: var(--accent-light);
+    transition: all var(--transition);
+  }
+  .btn--follow:hover { background: var(--accent); color: #fff; transform: none; box-shadow: none; }
+
+  .btn--profile {
+    display: block;
+    text-align: center;
+    padding: 9px 16px;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition: all var(--transition);
+  }
+  .btn--profile:hover { border-color: var(--accent); color: var(--accent-light); background: rgba(124,58,237,.06); }
+
+  /* ─── Feed Main ──────────────────────────────────────────────── */
+  .feed-main {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  /* ─── Create Post ────────────────────────────────────────────── */
+  .create-post {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 20px;
+    transition: border-color var(--transition);
+  }
+  .create-post:focus-within { border-color: rgba(124,58,237,.5); }
+
+  .create-post-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .create-post-body { flex: 1; }
+
+  .post-textarea {
+    width: 100%;
+    background: transparent;
+    color: var(--text);
+    border: none;
+    border-bottom: 1px solid var(--border);
+    padding: 4px 0 12px;
+    font-family: inherit;
+    font-size: 0.9375rem;
+    line-height: 1.65;
+    resize: none;
+    min-height: 72px;
+    outline: none;
+    transition: border-color var(--transition);
+    field-sizing: content; /* modern browsers only — graceful degradation */
+  }
+  .post-textarea::placeholder { color: var(--muted); }
+  .post-textarea:focus { border-bottom-color: var(--accent); }
+
+  .create-post-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 12px;
+  }
+
+  .char-counter {
+    font-size: 0.8125rem;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+    transition: color var(--transition);
+  }
+  .char-counter.warn  { color: #FBBF24; }
+  .char-counter.over  { color: var(--error); }
+
+  .create-post-right { display: flex; align-items: center; gap: 10px; }
+
+  .file-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.8125rem;
+    color: var(--muted);
+    cursor: pointer;
+    padding: 7px 12px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    transition: all var(--transition);
+    white-space: nowrap;
+  }
+  .file-label:hover { color: var(--accent-light); border-color: var(--accent); background: rgba(124,58,237,.06); }
+  .file-label input[type="file"] { display: none; }
+
+  /* ─── Post Card ──────────────────────────────────────────────── */
+  .post-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    transition: border-color var(--transition);
+    animation: fadeIn .3s ease both;
+  }
+  .post-card:hover { border-color: rgba(124,58,237,.35); }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .post-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 20px 12px;
+  }
+
+  .post-author-info { flex: 1; min-width: 0; }
+
+  .post-author-name {
+    font-weight: 600;
+    font-size: 0.9375rem;
+    color: var(--text);
+    line-height: 1.2;
+  }
+
+  .post-author-handle {
+    font-size: 0.8rem;
+    color: var(--muted);
+  }
+
+  .post-meta {
+    font-size: 0.75rem;
+    color: var(--muted);
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .post-body { padding: 0 20px 16px; }
+
+  .post-content {
+    font-size: 0.9375rem;
+    color: var(--text);
+    line-height: 1.7;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  .post-image {
+    width: 100%;
+    max-height: 400px;
+    object-fit: cover;
+    display: block;
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+  }
+
+  /* ─── Action Row ─────────────────────────────────────────────── */
+  .post-actions {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    padding: 6px 12px;
+    border-top: 1px solid var(--border);
+  }
+
+  .action-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    background: none;
+    border: none;
+    color: var(--muted);
+    font-family: inherit;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    padding: 8px 12px;
+    border-radius: var(--radius-sm);
+    transition: all var(--transition);
+    line-height: 1;
+  }
+  .action-btn:hover { background: var(--surface-2); color: var(--text); }
+
+  .action-btn.liked { color: #F87171; }
+  .action-btn.liked:hover { background: rgba(248,113,113,.1); }
+
+  .action-count {
+    font-size: 0.875rem;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ─── Comments Section ───────────────────────────────────────── */
+  .comments-section {
+    overflow: hidden;
+    max-height: 0;
+    transition: max-height 0.38s cubic-bezier(.4,0,.2,1);
+    border-top: 0px solid var(--border);
+  }
+
+  .comments-section.open {
+    max-height: 800px;
+    border-top-width: 1px;
+  }
+
+  .comments-inner { padding: 16px 20px; }
+
+  .comment-item {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+
+  .comment-bubble {
+    flex: 1;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 0 var(--radius-md) var(--radius-md) var(--radius-md);
+    padding: 10px 14px;
+  }
+
+  .comment-author {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--accent-light);
+    margin-bottom: 3px;
+  }
+
+  .comment-text {
+    font-size: 0.875rem;
+    color: var(--text);
+    opacity: .9;
+    line-height: 1.55;
+    word-break: break-word;
+  }
+
+  .comment-form {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid var(--border);
+  }
+
+  .comment-input {
+    flex: 1;
+    background: var(--bg);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 9999px;
+    padding: 9px 18px;
+    font-family: inherit;
+    font-size: 0.875rem;
+    outline: none;
+    transition: border-color var(--transition), box-shadow var(--transition);
+  }
+  .comment-input::placeholder { color: var(--muted); opacity: .7; }
+  .comment-input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(124,58,237,.2);
+  }
+
+  .comment-submit {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 9999px;
+    padding: 9px 20px;
+    font-family: inherit;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background var(--transition), transform var(--transition);
+  }
+  .comment-submit:hover { background: var(--accent-hover); transform: translateY(-1px); }
+  .comment-submit:active { transform: none; }
+
+  /* ─── Empty State ────────────────────────────────────────────── */
+  .empty-feed {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    text-align: center;
+    padding: 64px 32px;
+  }
+
+  .empty-feed-icon { font-size: 3rem; margin-bottom: 16px; line-height: 1; }
+  .empty-feed-title { font-size: 1.25rem; font-weight: 600; color: var(--text); margin-bottom: 8px; }
+  .empty-feed-sub { font-size: 0.9375rem; color: var(--muted); }
+
+  /* ─── Responsive ─────────────────────────────────────────────── */
+  @media (max-width: 720px) {
+    .feed-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .sidebar {
+      position: static;
+      order: 2;
+    }
+
+    .feed-main { order: 1; }
+
+    .feed-wrapper { padding: 16px 16px 48px; }
+  }
+</style>
+{% endblock %}
+
+
+{% block content %}
+<div class="feed-wrapper">
+  <div class="feed-grid">
+
+    {# ── LEFT SIDEBAR ───────────────────────────────────────────── #}
+    <aside class="sidebar" aria-label="Profile sidebar">
+
+      {# — Profile card — #}
+      <div class="sidebar-card">
+        <div class="profile-block">
+          <div class="avatar avatar--lg" aria-hidden="true">
+            {% if user_profile and user_profile.avatar %}
+              <img src="{{ user_profile.avatar.url }}" alt="Your avatar" />
+            {% else %}
+              {{ request.user.username|first }}
+            {% endif %}
+          </div>
+          <div>
+            <div class="profile-name">
+              {{ request.user.get_full_name|default:request.user.username }}
+            </div>
+            <div class="profile-handle">@{{ request.user.username }}</div>
+          </div>
+        </div>
+
+        <div class="stats-row" aria-label="Your stats">
+          <div class="stat">
+            <span class="stat-value">{{ follower_count }}</span>
+            <span class="stat-label">Followers</span>
+          </div>
+          <div class="stat">
+            <span class="stat-value">{{ following_count }}</span>
+            <span class="stat-label">Following</span>
+          </div>
+        </div>
+
+        <a href="{% url 'core:profile' request.user.username %}" class="btn--profile">Your Profile</a>
+      </div>
+
+      {# — Suggested users — #}
+      {% if suggested_users %}
+      <div class="sidebar-card">
+        <h2 class="sidebar-heading">Suggested for you</h2>
+
+        {% for su in suggested_users %}
+        <div class="suggested-user">
+          <div class="avatar avatar--sm" aria-hidden="true">
+            {% if su.profile and su.profile.avatar %}
+              <img src="{{ su.profile.avatar.url }}" alt="{{ su.username }}" />
+            {% else %}
+              {{ su.username|first }}
+            {% endif %}
+          </div>
+
+          <div class="suggested-user-info">
+            <div class="suggested-username">{{ su.username }}</div>
+            <div class="suggested-handle">@{{ su.username }}</div>
+          </div>
+
+          <form method="post" action="{% url 'core:follow_toggle' su.username %}">
+            {% csrf_token %}
+            <button
+              type="submit"
+              class="btn btn--follow btn--sm"
+              aria-label="Follow {{ su.username }}"
+            >Follow</button>
+          </form>
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+    </aside>
+
+
+    {# ── MAIN FEED ──────────────────────────────────────────────── #}
+    <main class="feed-main" aria-label="Feed">
+
+      {# — Create post card — #}
+      <section class="create-post" aria-label="Create a new post">
+        <form
+          method="post"
+          action="{% url 'core:create_post' %}"
+          enctype="multipart/form-data"
+          id="create-post-form"
+        >
+          {% csrf_token %}
+
+          <div class="create-post-header">
+            <div class="avatar avatar--md" aria-hidden="true">
+              {% if user_profile and user_profile.avatar %}
+                <img src="{{ user_profile.avatar.url }}" alt="Your avatar" />
+              {% else %}
+                {{ request.user.username|first }}
+              {% endif %}
+            </div>
+
+            <div class="create-post-body">
+              <textarea
+                id="post-content"
+                name="content"
+                maxlength="500"
+                placeholder="What's on your mind?"
+                aria-label="Post content"
+                class="post-textarea"
+                rows="3"
+              ></textarea>
+
+              <div class="create-post-footer">
+                <span class="char-counter" id="char-counter" aria-live="polite">0 / 500</span>
+
+                <div class="create-post-right">
+                  <label class="file-label" for="post-image" title="Attach an image">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                      <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                      <circle cx="8.5" cy="8.5" r="1.5"/>
+                      <polyline points="21 15 16 10 5 21"/>
+                    </svg>
+                    <span id="image-label-text">Photo</span>
+                    <input
+                      type="file"
+                      id="post-image"
+                      name="image"
+                      accept="image/*"
+                    />
+                  </label>
+
+                  <button
+                    type="submit"
+                    class="btn btn--primary btn--sm"
+                    id="post-submit-btn"
+                  >Post</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </form>
+      </section>
+
+
+      {# — Post feed — #}
+      {% for post in posts %}
+      <article class="post-card" id="post-{{ post.id }}" aria-label="Post by {{ post.author.username }}">
+
+        {# Header #}
+        <header class="post-header">
+          <div class="avatar avatar--md" aria-hidden="true">
+            {% if post.author.profile and post.author.profile.avatar %}
+              <img src="{{ post.author.profile.avatar.url }}" alt="{{ post.author.username }}" />
+            {% else %}
+              {{ post.author.username|first }}
+            {% endif %}
+          </div>
+
+          <div class="post-author-info">
+            <div class="post-author-name">
+              {{ post.author.get_full_name|default:post.author.username }}
+            </div>
+            <div class="post-author-handle">@{{ post.author.username }}</div>
+          </div>
+
+          <time class="post-meta" datetime="{{ post.created_at|date:'c' }}" title="{{ post.created_at|date:'N j, Y g:i A' }}">
+            {{ post.created_at|timesince_short }}
+          </time>
+        </header>
+
+        {# Body #}
+        <div class="post-body">
+          <p class="post-content">{{ post.content }}</p>
+        </div>
+
+        {# Image (optional) #}
+        {% if post.image %}
+          <img
+            src="{{ post.image.url }}"
+            alt="Post image by {{ post.author.username }}"
+            class="post-image"
+            loading="lazy"
+          />
+        {% endif %}
+
+        {# Action row #}
+        <div class="post-actions" role="group" aria-label="Post actions">
+
+          {# Like #}
+          <form method="post" action="{% url 'core:like_toggle' post.id %}" style="display:contents;">
+            {% csrf_token %}
+            <button
+              type="submit"
+              class="action-btn {% if post.id in liked_post_ids %}liked{% endif %}"
+              aria-label="{% if post.id in liked_post_ids %}Unlike{% else %}Like{% endif %} this post"
+              aria-pressed="{% if post.id in liked_post_ids %}true{% else %}false{% endif %}"
+            >
+              {% if post.id in liked_post_ids %}
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="#F87171" stroke="#F87171" stroke-width="2" aria-hidden="true"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+              {% else %}
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+              {% endif %}
+              <span class="action-count">{{ post.likes.count }}</span>
+            </button>
+          </form>
+
+          {# Comment toggle #}
+          <button
+            type="button"
+            class="action-btn"
+            id="comment-toggle-{{ post.id }}"
+            aria-expanded="false"
+            aria-controls="comments-{{ post.id }}"
+            onclick="toggleComments({{ post.id }})"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            <span class="action-count">{{ post.comments.count }}</span>
+          </button>
+
+        </div>
+
+        {# Comments #}
+        <section
+          class="comments-section"
+          id="comments-{{ post.id }}"
+          aria-label="Comments on this post"
+        >
+          <div class="comments-inner">
+
+            {% for comment in post.comments.all %}
+            <div class="comment-item">
+              <div class="avatar avatar--sm" aria-hidden="true">
+                {% if comment.author.profile and comment.author.profile.avatar %}
+                  <img src="{{ comment.author.profile.avatar.url }}" alt="{{ comment.author.username }}" />
+                {% else %}
+                  {{ comment.author.username|first }}
+                {% endif %}
+              </div>
+              <div class="comment-bubble">
+                <div class="comment-author">{{ comment.author.username }}</div>
+                <div class="comment-text">{{ comment.content }}</div>
+              </div>
+            </div>
+            {% empty %}
+            <p style="font-size:.875rem;color:var(--muted);text-align:center;padding:8px 0 4px;">
+              No comments yet — start the conversation!
+            </p>
+            {% endfor %}
+
+            {# Add comment form #}
+            <form
+              class="comment-form"
+              method="post"
+              action="{% url 'core:add_comment' post.id %}"
+            >
+              {% csrf_token %}
+              <input
+                type="text"
+                name="content"
+                maxlength="300"
+                placeholder="Write a comment…"
+                class="comment-input"
+                id="comment-input-{{ post.id }}"
+                aria-label="Write a comment"
+                required
+              />
+              <button type="submit" class="comment-submit">Reply</button>
+            </form>
+
+          </div>
+        </section>
+
+      </article>
+
+      {% empty %}
+      <div class="empty-feed" role="status" aria-live="polite">
+        <div class="empty-feed-icon" aria-hidden="true">🌐</div>
+        <h2 class="empty-feed-title">Your feed is quiet</h2>
+        <p class="empty-feed-sub">
+          Follow some people to see their posts here.
+          <br/>
+          <a href="{% url 'core:users_list' %}" style="color:var(--accent-light);font-weight:600;">
+            Browse people to follow →
+          </a>
+        </p>
+      </div>
+      {% endfor %}
+
+    </main>
+  </div>
+</div>
+{% endblock %}
+
+
+{% block extra_scripts %}
+<script>
+  /* ── Character counter ──────────────────────────────────────── */
+  const postContent  = document.getElementById('post-content');
+  const charCounter  = document.getElementById('char-counter');
+  const MAX_CHARS    = 500;
+  const WARN_AT      = 400;
+
+  if (postContent) {
+    postContent.addEventListener('input', () => {
+      const len = postContent.value.length;
+      charCounter.textContent = `${len} / ${MAX_CHARS}`;
+      charCounter.className = 'char-counter';
+      if (len >= MAX_CHARS) charCounter.classList.add('over');
+      else if (len >= WARN_AT) charCounter.classList.add('warn');
+    });
+  }
+
+  /* ── Image filename feedback ────────────────────────────────── */
+  const postImage   = document.getElementById('post-image');
+  const imageLabel  = document.getElementById('image-label-text');
+
+  if (postImage) {
+    postImage.addEventListener('change', () => {
+      if (postImage.files.length > 0) {
+        const name = postImage.files[0].name;
+        imageLabel.textContent = name.length > 18 ? name.slice(0, 17) + '…' : name;
+      } else {
+        imageLabel.textContent = 'Photo';
+      }
+    });
+  }
+
+  /* ── Comment toggle ─────────────────────────────────────────── */
+  function toggleComments(postId) {
+    const section = document.getElementById(`comments-${postId}`);
+    const btn     = document.getElementById(`comment-toggle-${postId}`);
+    if (!section) return;
+
+    const isOpen = section.classList.toggle('open');
+    if (btn) btn.setAttribute('aria-expanded', isOpen);
+
+    if (isOpen) {
+      // Focus the comment input after the transition finishes
+      setTimeout(() => {
+        const input = document.getElementById(`comment-input-${postId}`);
+        if (input) input.focus();
+      }, 380);
+    }
+  }
+</script>
+{% endblock %}

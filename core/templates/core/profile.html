@@ -1,0 +1,533 @@
+{% extends "base.html" %}
+{% load custom_filters %}
+
+{% block title %}{{ profile_user.username }} · Nexus{% endblock %}
+{% block meta_description %}{{ profile_user.username }}'s profile on Nexus — {{ post_count }} posts, {{ follower_count }} followers.{% endblock %}
+
+{% block extra_head %}
+<style>
+  /* ─── Page wrapper ───────────────────────────────────────────── */
+  .profile-page {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 32px 24px 64px;
+  }
+
+  /* ─── Header card ────────────────────────────────────────────── */
+  .profile-header {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    margin-bottom: 24px;
+    animation: slideUp .35s cubic-bezier(.4,0,.2,1) both;
+  }
+
+  /* Cover */
+  .profile-cover {
+    height: 140px;
+    position: relative;
+    background:
+      linear-gradient(135deg, #7C3AED 0%, #4F46E5 45%, #1e1b4b 100%);
+    overflow: hidden;
+  }
+
+  /* Decorative radial shimmer on cover */
+  .profile-cover::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 60% 80% at 15% 50%, rgba(196,181,253,.25) 0%, transparent 65%),
+      radial-gradient(ellipse 40% 60% at 80% 30%, rgba(124,58,237,.3) 0%, transparent 70%);
+  }
+
+  /* Dot grid texture */
+  .profile-cover::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: radial-gradient(rgba(255,255,255,.08) 1px, transparent 1px);
+    background-size: 20px 20px;
+  }
+
+  /* Info section */
+  .profile-info {
+    padding: 0 28px 28px;
+  }
+
+  /* Top row: avatar (left) + action button (right) */
+  .profile-top-row {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    margin-top: -44px;
+    margin-bottom: 16px;
+  }
+
+  /* Avatar */
+  .profile-avatar {
+    width: 88px;
+    height: 88px;
+    border-radius: 50%;
+    border: 4px solid var(--surface);
+    outline: 3px solid var(--accent);
+    background: linear-gradient(135deg, var(--accent), #4F46E5);
+    color: #fff;
+    font-size: 2.25rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    text-transform: uppercase;
+    box-shadow: 0 4px 20px rgba(124,58,237,.4);
+    flex-shrink: 0;
+    position: relative;
+    z-index: 1;
+  }
+
+  .profile-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  /* Action button area */
+  .profile-action { flex-shrink: 0; padding-bottom: 4px; }
+
+  /* Name + handle */
+  .profile-username {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text);
+    line-height: 1.2;
+    margin-bottom: 2px;
+  }
+
+  .profile-handle {
+    font-size: 0.9375rem;
+    color: var(--muted);
+    margin-bottom: 12px;
+  }
+
+  /* Bio */
+  .profile-bio {
+    font-size: 0.9375rem;
+    color: var(--text);
+    opacity: .85;
+    line-height: 1.65;
+    margin-bottom: 16px;
+    max-width: 540px;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  /* Stats row */
+  .profile-stats {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    flex-wrap: wrap;
+  }
+
+  .profile-stat {
+    font-size: 0.9375rem;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .profile-stat strong {
+    color: var(--text);
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .profile-stat-dot {
+    color: var(--border);
+    font-size: 1.2rem;
+    line-height: 1;
+  }
+
+  /* Follow / Unfollow button variants */
+  .btn--unfollow {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    transition: all var(--transition);
+  }
+  .btn--unfollow:hover {
+    background: rgba(248,113,113,.1);
+    border-color: var(--error);
+    color: var(--error);
+  }
+
+  /* ─── Section divider ────────────────────────────────────────── */
+  .section-heading {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  /* ─── Post cards (same as feed) ──────────────────────────────── */
+  .posts-list { display: flex; flex-direction: column; gap: 16px; }
+
+  .post-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    transition: border-color var(--transition);
+    animation: fadeIn .3s ease both;
+  }
+  .post-card:hover { border-color: rgba(124,58,237,.35); }
+
+  @keyframes fadeIn  { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:none; } }
+  @keyframes slideUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:none; } }
+
+  .post-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 20px 12px;
+  }
+
+  .avatar {
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), #4F46E5);
+    color: #fff;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    flex-shrink: 0;
+    text-transform: uppercase;
+  }
+  .avatar img { width:100%; height:100%; object-fit:cover; display:block; }
+  .avatar--md { width:40px; height:40px; font-size:1rem; }
+  .avatar--sm { width:30px; height:30px; font-size:.75rem; }
+
+  .post-author-info { flex:1; min-width:0; }
+  .post-author-name { font-weight:600; font-size:.9375rem; color:var(--text); line-height:1.2; }
+  .post-author-link { color:var(--text); }
+  .post-author-link:hover { color:var(--accent-light); opacity:1; }
+  .post-author-handle { font-size:.8rem; color:var(--muted); }
+  .post-meta { font-size:.75rem; color:var(--muted); white-space:nowrap; flex-shrink:0; }
+
+  .post-body { padding:0 20px 16px; }
+  .post-content { font-size:.9375rem; color:var(--text); line-height:1.7; white-space:pre-wrap; word-break:break-word; }
+
+  .post-image {
+    width:100%; max-height:400px; object-fit:cover; display:block;
+    border-top:1px solid var(--border); border-bottom:1px solid var(--border);
+  }
+
+  /* Action row */
+  .post-actions {
+    display:flex; align-items:center; gap:2px;
+    padding:6px 12px; border-top:1px solid var(--border);
+  }
+
+  .action-btn {
+    display:inline-flex; align-items:center; gap:7px;
+    background:none; border:none; color:var(--muted);
+    font-family:inherit; font-size:.875rem; font-weight:500;
+    cursor:pointer; padding:8px 12px; border-radius:var(--radius-sm);
+    transition:all var(--transition); line-height:1;
+  }
+  .action-btn:hover { background:var(--surface-2); color:var(--text); }
+  .action-btn.liked { color:#F87171; }
+  .action-btn.liked:hover { background:rgba(248,113,113,.1); }
+  .action-count { font-size:.875rem; font-variant-numeric:tabular-nums; }
+
+  /* Comments */
+  .comments-section {
+    overflow:hidden; max-height:0;
+    transition:max-height .38s cubic-bezier(.4,0,.2,1);
+    border-top:0px solid var(--border);
+  }
+  .comments-section.open { max-height:700px; border-top-width:1px; }
+  .comments-inner { padding:16px 20px; }
+
+  .comment-item { display:flex; gap:10px; margin-bottom:12px; }
+  .comment-bubble {
+    flex:1; background:var(--bg); border:1px solid var(--border);
+    border-radius:0 var(--radius-md) var(--radius-md) var(--radius-md);
+    padding:10px 14px;
+  }
+  .comment-author { font-size:.8125rem; font-weight:600; color:var(--accent-light); margin-bottom:3px; }
+  .comment-text { font-size:.875rem; color:var(--text); opacity:.9; line-height:1.55; word-break:break-word; }
+
+  .comment-form {
+    display:flex; align-items:center; gap:10px;
+    margin-top:14px; padding-top:14px; border-top:1px solid var(--border);
+  }
+  .comment-input {
+    flex:1; background:var(--bg); color:var(--text); border:1px solid var(--border);
+    border-radius:9999px; padding:9px 18px; font-family:inherit; font-size:.875rem;
+    outline:none; transition:border-color var(--transition), box-shadow var(--transition);
+  }
+  .comment-input::placeholder { color:var(--muted); opacity:.7; }
+  .comment-input:focus { border-color:var(--accent); box-shadow:0 0 0 3px rgba(124,58,237,.2); }
+  .comment-submit {
+    background:var(--accent); color:#fff; border:none; border-radius:9999px;
+    padding:9px 20px; font-family:inherit; font-size:.875rem; font-weight:600;
+    cursor:pointer; white-space:nowrap; transition:background var(--transition), transform var(--transition);
+  }
+  .comment-submit:hover { background:var(--accent-hover); transform:translateY(-1px); }
+
+  /* Empty state */
+  .empty-posts {
+    background:var(--surface); border:1px solid var(--border);
+    border-radius:var(--radius-md); text-align:center; padding:56px 32px;
+  }
+  .empty-icon { font-size:3rem; margin-bottom:16px; line-height:1; }
+  .empty-title { font-size:1.125rem; font-weight:600; color:var(--text); margin-bottom:6px; }
+  .empty-sub { font-size:.9375rem; color:var(--muted); }
+
+  /* Responsive */
+  @media (max-width:600px) {
+    .profile-page { padding:16px 12px 48px; }
+    .profile-info { padding:0 18px 20px; }
+    .profile-top-row { margin-top:-36px; }
+    .profile-avatar { width:72px; height:72px; font-size:1.75rem; }
+    .profile-username { font-size:1.25rem; }
+  }
+</style>
+{% endblock %}
+
+
+{% block content %}
+<div class="profile-page">
+
+  {# ── Profile Header ──────────────────────────────────────────── #}
+  <article class="profile-header" aria-label="{{ profile_user.username }}'s profile">
+
+    {# Cover #}
+    <div class="profile-cover" aria-hidden="true"></div>
+
+    {# Info section #}
+    <div class="profile-info">
+
+      {# Avatar + action row #}
+      <div class="profile-top-row">
+        <div class="profile-avatar" aria-hidden="true">
+          {% if user_profile and user_profile.avatar %}
+            <img src="{{ user_profile.avatar.url }}" alt="{{ profile_user.username }}'s avatar" />
+          {% else %}
+            {{ profile_user.username|first }}
+          {% endif %}
+        </div>
+
+        <div class="profile-action">
+          {% if is_own_profile %}
+            <a href="{% url 'core:edit_profile' %}" class="btn btn--ghost" id="edit-profile-btn">
+              Edit Profile
+            </a>
+          {% else %}
+            <form method="post" action="{% url 'core:follow_toggle' profile_user.username %}">
+              {% csrf_token %}
+              {% if is_following %}
+                <button type="submit" class="btn btn--unfollow" id="follow-btn" aria-label="Unfollow {{ profile_user.username }}">
+                  Following
+                </button>
+              {% else %}
+                <button type="submit" class="btn btn--primary" id="follow-btn" aria-label="Follow {{ profile_user.username }}">
+                  Follow
+                </button>
+              {% endif %}
+            </form>
+          {% endif %}
+        </div>
+      </div>
+
+      {# Name and handle #}
+      <h1 class="profile-username">{{ profile_user.get_full_name|default:profile_user.username }}</h1>
+      <p class="profile-handle">@{{ profile_user.username }}</p>
+
+      {# Bio #}
+      {% if user_profile and user_profile.bio %}
+        <p class="profile-bio">{{ user_profile.bio }}</p>
+      {% elif is_own_profile %}
+        <p class="profile-bio" style="color:var(--muted);font-style:italic;">
+          No bio yet. <a href="{% url 'core:edit_profile' %}">Add one →</a>
+        </p>
+      {% endif %}
+
+      {# Stats #}
+      <div class="profile-stats" aria-label="Profile statistics">
+        <span class="profile-stat">
+          <strong>{{ post_count }}</strong> Posts
+        </span>
+        <span class="profile-stat-dot" aria-hidden="true">·</span>
+        <span class="profile-stat">
+          <strong>{{ follower_count }}</strong> Followers
+        </span>
+        <span class="profile-stat-dot" aria-hidden="true">·</span>
+        <span class="profile-stat">
+          <strong>{{ following_count }}</strong> Following
+        </span>
+      </div>
+
+    </div>
+  </article>
+
+
+  {# ── Posts ───────────────────────────────────────────────────── #}
+  <section aria-label="{{ profile_user.username }}'s posts">
+    <h2 class="section-heading">Posts</h2>
+
+    <div class="posts-list">
+      {% for post in posts %}
+      <article class="post-card" id="post-{{ post.id }}" aria-label="Post by {{ post.author.username }}">
+
+        <header class="post-header">
+          <div class="avatar avatar--md" aria-hidden="true">
+            {% if post.author.profile and post.author.profile.avatar %}
+              <img src="{{ post.author.profile.avatar.url }}" alt="{{ post.author.username }}" />
+            {% else %}
+              {{ post.author.username|first }}
+            {% endif %}
+          </div>
+          <div class="post-author-info">
+            <div class="post-author-name">
+              <a href="{% url 'core:profile' post.author.username %}" class="post-author-link">
+                {{ post.author.get_full_name|default:post.author.username }}
+              </a>
+            </div>
+            <div class="post-author-handle">@{{ post.author.username }}</div>
+          </div>
+          <time class="post-meta" datetime="{{ post.created_at|date:'c' }}" title="{{ post.created_at|date:'N j, Y g:i A' }}">
+            {{ post.created_at|timesince_short }}
+          </time>
+        </header>
+
+        <div class="post-body">
+          <p class="post-content">{{ post.content }}</p>
+        </div>
+
+        {% if post.image %}
+          <img src="{{ post.image.url }}" alt="Post image" class="post-image" loading="lazy" />
+        {% endif %}
+
+        {# Actions #}
+        <div class="post-actions" role="group" aria-label="Post actions">
+
+          <form method="post" action="{% url 'core:like_toggle' post.id %}" style="display:contents;">
+            {% csrf_token %}
+            <button
+              type="submit"
+              class="action-btn {% if post.id in liked_post_ids %}liked{% endif %}"
+              aria-label="{% if post.id in liked_post_ids %}Unlike{% else %}Like{% endif %} post"
+              aria-pressed="{% if post.id in liked_post_ids %}true{% else %}false{% endif %}"
+            >
+              {% if post.id in liked_post_ids %}
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="#F87171" stroke="#F87171" stroke-width="2" aria-hidden="true"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+              {% else %}
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+              {% endif %}
+              <span class="action-count">{{ post.likes.count }}</span>
+            </button>
+          </form>
+
+          <button
+            type="button"
+            class="action-btn"
+            id="cmt-btn-{{ post.id }}"
+            aria-expanded="false"
+            aria-controls="comments-{{ post.id }}"
+            onclick="toggleComments({{ post.id }})"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            <span class="action-count">{{ post.comments.count }}</span>
+          </button>
+
+        </div>
+
+        {# Comments #}
+        <section class="comments-section" id="comments-{{ post.id }}" aria-label="Comments">
+          <div class="comments-inner">
+
+            {% for comment in post.comments.all %}
+            <div class="comment-item">
+              <div class="avatar avatar--sm" aria-hidden="true">
+                {% if comment.author.profile and comment.author.profile.avatar %}
+                  <img src="{{ comment.author.profile.avatar.url }}" alt="{{ comment.author.username }}" />
+                {% else %}
+                  {{ comment.author.username|first }}
+                {% endif %}
+              </div>
+              <div class="comment-bubble">
+                <div class="comment-author">{{ comment.author.username }}</div>
+                <div class="comment-text">{{ comment.content }}</div>
+              </div>
+            </div>
+            {% empty %}
+            <p style="font-size:.875rem;color:var(--muted);text-align:center;padding:8px 0 4px;">No comments yet.</p>
+            {% endfor %}
+
+            <form class="comment-form" method="post" action="{% url 'core:add_comment' post.id %}">
+              {% csrf_token %}
+              <input
+                type="text"
+                name="content"
+                maxlength="300"
+                placeholder="Write a comment…"
+                class="comment-input"
+                id="cmt-input-{{ post.id }}"
+                aria-label="Write a comment"
+                required
+              />
+              <button type="submit" class="comment-submit">Reply</button>
+            </form>
+
+          </div>
+        </section>
+
+      </article>
+      {% empty %}
+      <div class="empty-posts" role="status">
+        <div class="empty-icon" aria-hidden="true">✏️</div>
+        <h2 class="empty-title">No posts yet</h2>
+        <p class="empty-sub">
+          {% if is_own_profile %}
+            Nothing here yet — <a href="{% url 'core:feed' %}" style="color:var(--accent-light);font-weight:600;">share something!</a>
+          {% else %}
+            {{ profile_user.username }} hasn't posted anything yet.
+          {% endif %}
+        </p>
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+
+</div>
+{% endblock %}
+
+
+{% block extra_scripts %}
+<script>
+  function toggleComments(postId) {
+    const section = document.getElementById(`comments-${postId}`);
+    const btn     = document.getElementById(`cmt-btn-${postId}`);
+    if (!section) return;
+    const isOpen = section.classList.toggle('open');
+    if (btn) btn.setAttribute('aria-expanded', isOpen);
+    if (isOpen) {
+      setTimeout(() => {
+        const input = document.getElementById(`cmt-input-${postId}`);
+        if (input) input.focus();
+      }, 380);
+    }
+  }
+</script>
+{% endblock %}

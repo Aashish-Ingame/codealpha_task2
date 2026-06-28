@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="{% block meta_description %}Nexus — connect, share, and discover.{% endblock %}" />
+  <title>{% block title %}Nexus{% endblock %}</title>
+
+  <!-- Google Fonts: Inter + DM Serif Display -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+
+  <style>
+    /* ─── Design Tokens ─────────────────────────────────────────── */
+    :root {
+      --bg:           #0D1117;
+      --surface:      #161B22;
+      --surface-2:    #1C2230;
+      --border:       #30363D;
+      --accent:       #7C3AED;
+      --accent-hover: #6D28D9;
+      --accent-light: #C4B5FD;
+      --text:         #E2E8F0;
+      --muted:        #8B949E;
+      --error:        #F87171;
+      --success:      #34D399;
+
+      --radius-sm:  6px;
+      --radius-md:  12px;
+      --radius-lg:  20px;
+      --shadow:     0 8px 32px rgba(0, 0, 0, .45);
+      --transition: 180ms cubic-bezier(.4, 0, .2, 1);
+    }
+
+    /* ─── Reset & Base ──────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      font-size: 1rem;
+      line-height: 1.6;
+      color: var(--text);
+      background-color: var(--bg);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ─── Reduced-motion support ────────────────────────────────── */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: .01ms !important;
+        transition-duration: .01ms !important;
+      }
+    }
+
+    /* ─── Typography ────────────────────────────────────────────── */
+    h1, h2, h3 { line-height: 1.25; }
+    a { color: var(--accent-light); text-decoration: none; transition: color var(--transition); }
+    a:hover { color: var(--accent-light); opacity: .8; }
+
+    /* ─── Navbar ────────────────────────────────────────────────── */
+    .navbar {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 24px;
+      height: 64px;
+      background: rgba(13, 17, 23, .85);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .navbar__logo {
+      font-family: 'DM Serif Display', Georgia, serif;
+      font-size: 1.625rem;
+      color: var(--text);
+      letter-spacing: -.5px;
+      background: linear-gradient(135deg, var(--accent-light), var(--accent));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      transition: opacity var(--transition);
+    }
+    .navbar__logo:hover { opacity: .85; }
+
+    .navbar__actions { display: flex; align-items: center; gap: 8px; }
+
+    .navbar__user-link {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 4px 12px 4px 4px;
+      border-radius: 9999px;
+      border: 1px solid var(--border);
+      color: var(--text);
+      text-decoration: none;
+      transition: background var(--transition), border-color var(--transition);
+    }
+    .navbar__user-link:hover {
+      background: var(--surface-2);
+      border-color: var(--accent);
+      opacity: 1;
+    }
+
+    .navbar__user-avatar {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent), #4F46E5);
+      color: #fff;
+      font-size: 0.75rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .navbar__user-name {
+      font-size: 0.8125rem;
+      font-weight: 500;
+      color: var(--muted);
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 8px 20px;
+      font-family: inherit;
+      font-size: .875rem;
+      font-weight: 500;
+      border: none;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: background var(--transition), transform var(--transition), box-shadow var(--transition);
+      white-space: nowrap;
+    }
+
+    .btn--primary {
+      background: var(--accent);
+      color: #fff;
+    }
+    .btn--primary:hover {
+      background: var(--accent-hover);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 14px rgba(124, 58, 237, .45);
+    }
+    .btn--primary:active { transform: translateY(0); }
+
+    .btn--ghost {
+      background: transparent;
+      color: var(--muted);
+      border: 1px solid var(--border);
+    }
+    .btn--ghost:hover { background: var(--surface-2); color: var(--text); }
+
+    /* ─── Main content ──────────────────────────────────────────── */
+    main { flex: 1; }
+
+    /* ─── Auth card shared styles ───────────────────────────────── */
+    .auth-wrapper {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: calc(100vh - 64px);
+      padding: 40px 16px;
+      background:
+        radial-gradient(ellipse 80% 60% at 50% -10%, rgba(124,58,237,.18) 0%, transparent 70%);
+    }
+
+    .auth-card {
+      width: 100%;
+      max-width: 420px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 40px 40px 36px;
+      box-shadow: var(--shadow);
+      animation: slideUp .35s cubic-bezier(.4, 0, .2, 1) both;
+    }
+
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .auth-card__logo {
+      font-family: 'DM Serif Display', Georgia, serif;
+      font-size: 1.5rem;
+      background: linear-gradient(135deg, var(--accent-light), var(--accent));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      display: block;
+      margin-bottom: 8px;
+    }
+
+    .auth-card__title {
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 4px;
+    }
+
+    .auth-card__sub {
+      font-size: .875rem;
+      color: var(--muted);
+      margin-bottom: 32px;
+    }
+
+    /* ─── Form elements ─────────────────────────────────────────── */
+    .form-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 20px; }
+
+    .form-label {
+      font-size: .8125rem;
+      font-weight: 500;
+      color: var(--muted);
+      letter-spacing: .03em;
+      text-transform: uppercase;
+    }
+
+    .form-control {
+      width: 100%;
+      padding: 11px 14px;
+      background: var(--bg);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-family: inherit;
+      font-size: .9375rem;
+      outline: none;
+      transition: border-color var(--transition), box-shadow var(--transition);
+    }
+    .form-control::placeholder { color: var(--muted); opacity: .6; }
+    .form-control:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(124, 58, 237, .22);
+    }
+    .form-control.is-invalid { border-color: var(--error); }
+    .form-control.is-invalid:focus { box-shadow: 0 0 0 3px rgba(248, 113, 113, .2); }
+
+    .error-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .error-list li {
+      font-size: .8125rem;
+      color: var(--error);
+    }
+
+    /* Non-field errors banner */
+    .alert-error {
+      background: rgba(248,113,113,.1);
+      border: 1px solid rgba(248,113,113,.3);
+      border-radius: var(--radius-sm);
+      padding: 12px 16px;
+      margin-bottom: 24px;
+      font-size: .875rem;
+      color: var(--error);
+    }
+
+    .btn--full { width: 100%; padding: 13px 20px; font-size: 1rem; border-radius: var(--radius-sm); }
+
+    .auth-card__footer {
+      text-align: center;
+      margin-top: 24px;
+      font-size: .875rem;
+      color: var(--muted);
+    }
+    .auth-card__footer a { color: var(--accent-light); font-weight: 500; }
+    .auth-card__footer a:hover { text-decoration: underline; }
+
+    /* ─── Footer ────────────────────────────────────────────────── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 20px 24px;
+      text-align: center;
+      font-size: .8125rem;
+      color: var(--muted);
+    }
+    /* ─── Dark scrollbar ─────────────────────────────────────────── */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+    * { scrollbar-color: var(--border) transparent; scrollbar-width: thin; }
+
+    /* ─── Global button transitions ─────────────────────────────── */
+    .btn { transition: all .2s ease !important; }
+
+    /* ─── Post card hover lift ───────────────────────────────────── */
+    .post-card {
+      transition: border-color var(--transition), box-shadow .2s ease, transform .2s ease !important;
+    }
+    .post-card:hover {
+      box-shadow: 0 8px 28px rgba(0,0,0,.35) !important;
+      transform: translateY(-2px) !important;
+    }
+
+    /* ─── Like button red state ──────────────────────────────────── */
+    .action-btn.liked { color: #EF4444 !important; }
+    .action-btn.liked:hover { background: rgba(239,68,68,.1) !important; color: #EF4444 !important; }
+
+    /* ─── Navbar links ───────────────────────────────────────────── */
+    .navbar__links { display: flex; align-items: center; gap: 2px; }
+
+    .navbar__link {
+      display: flex; align-items: center; gap: 6px;
+      padding: 8px 14px;
+      border-radius: var(--radius-sm);
+      font-size: .875rem; font-weight: 500;
+      color: var(--muted);
+      text-decoration: none;
+      transition: all .2s ease;
+    }
+    .navbar__link:hover { color: var(--text); background: var(--surface-2); opacity: 1; }
+    .navbar__link.active { color: var(--accent-light); background: rgba(124,58,237,.12); }
+    .navbar__link.active:hover { opacity: 1; }
+
+    /* User menu */
+    .navbar__user-menu { position: relative; }
+
+    .navbar__user-trigger {
+      display: flex; align-items: center; gap: 8px;
+      padding: 5px 10px 5px 5px;
+      border-radius: 9999px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text);
+      cursor: pointer;
+      font-family: inherit; font-size: .875rem; font-weight: 500;
+      transition: all .2s ease;
+    }
+    .navbar__user-trigger:hover,
+    .navbar__user-trigger.open { background: var(--surface-2); border-color: var(--accent); }
+
+    .navbar__user-avatar {
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent), #4F46E5);
+      color: #fff; font-size: .75rem; font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; overflow: hidden;
+    }
+    .navbar__user-avatar img { width:100%; height:100%; object-fit:cover; display:block; }
+    .navbar__user-name { font-size: .8125rem; font-weight: 500; color: var(--muted); }
+    .navbar__chevron { color: var(--muted); transition: transform .2s ease; flex-shrink: 0; }
+    .navbar__user-trigger.open .navbar__chevron { transform: rotate(180deg); }
+
+    /* Dropdown panel */
+    .navbar__dropdown {
+      position: absolute; top: calc(100% + 10px); right: 0;
+      width: 210px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 6px;
+      opacity: 0; visibility: hidden; transform: translateY(-10px);
+      transition: opacity .2s ease, transform .2s ease, visibility .2s;
+      z-index: 200;
+      box-shadow: 0 12px 36px rgba(0,0,0,.45);
+    }
+    .navbar__dropdown.open { opacity: 1; visibility: visible; transform: translateY(0); }
+
+    .dropdown-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 12px;
+      border-radius: var(--radius-sm);
+      font-size: .875rem; font-weight: 500;
+      color: var(--muted);
+      text-decoration: none;
+      cursor: pointer;
+      transition: all .15s ease;
+      background: none; border: none;
+      width: 100%; font-family: inherit; text-align: left;
+    }
+    .dropdown-item:hover { background: var(--surface-2); color: var(--text); opacity: 1; }
+    .dropdown-item--danger:hover { background: rgba(248,113,113,.1); color: var(--error); }
+    .dropdown-divider { height: 1px; background: var(--border); margin: 4px 6px; }
+
+    /* ─── Responsive (hide sidebar at 768px) ─────────────────────── */
+    @media (max-width: 768px) {
+      .navbar__links { display: none; }
+    }
+  </style>
+
+  {% block extra_head %}{% endblock %}
+</head>
+
+<body>
+  <!-- ── Navigation ───────────────────────────────────────────── -->
+  <header>
+    <nav class="navbar" aria-label="Main navigation">
+
+      <!-- Logo -->
+      <a href="{% if user.is_authenticated %}{% url 'core:feed' %}{% else %}/{% endif %}"
+         class="navbar__logo" aria-label="Nexus home">Nexus</a>
+
+      <!-- Centre nav links -->
+      {% if user.is_authenticated %}
+      <div class="navbar__links" role="navigation" aria-label="Main links">
+        <a href="{% url 'core:feed' %}"
+           class="navbar__link {% if request.resolver_match.url_name == 'feed' %}active{% endif %}"
+           aria-current="{% if request.resolver_match.url_name == 'feed' %}page{% endif %}">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+          Feed
+        </a>
+        <a href="{% url 'core:users_list' %}"
+           class="navbar__link {% if request.resolver_match.url_name == 'users_list' %}active{% endif %}"
+           aria-current="{% if request.resolver_match.url_name == 'users_list' %}page{% endif %}">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          Explore
+        </a>
+      </div>
+      {% endif %}
+
+      <!-- Right actions -->
+      <div class="navbar__actions">
+        {% if user.is_authenticated %}
+
+          <div class="navbar__user-menu" id="user-menu-wrap">
+            <button
+              class="navbar__user-trigger"
+              id="user-menu-btn"
+              aria-haspopup="true"
+              aria-expanded="false"
+              aria-controls="user-dropdown"
+              onclick="toggleUserMenu(event)"
+            >
+              <span class="navbar__user-avatar" aria-hidden="true">
+                {% if user.profile and user.profile.avatar %}
+                  <img src="{{ user.profile.avatar.url }}" alt="{{ user.username }}" />
+                {% else %}
+                  {{ user.username|first|upper }}
+                {% endif %}
+              </span>
+              <span class="navbar__user-name">@{{ user.username }}</span>
+              <svg class="navbar__chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+
+            <div class="navbar__dropdown" id="user-dropdown" role="menu" aria-labelledby="user-menu-btn">
+              <a href="{% url 'core:profile' user.username %}" class="dropdown-item" role="menuitem">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                Profile
+              </a>
+              <a href="{% url 'core:users_list' %}" class="dropdown-item" role="menuitem">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                Explore
+              </a>
+              <div class="dropdown-divider" role="separator"></div>
+              <form method="post" action="{% url 'core:logout' %}" style="display:contents;">
+                {% csrf_token %}
+                <button type="submit" class="dropdown-item dropdown-item--danger" role="menuitem">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                  Log out
+                </button>
+              </form>
+            </div>
+          </div>
+
+        {% else %}
+          <a href="{% url 'core:login' %}" class="btn btn--ghost">Log in</a>
+          <a href="{% url 'core:register' %}" class="btn btn--primary">Sign up</a>
+        {% endif %}
+      </div>
+
+    </nav>
+  </header>
+
+  <!-- ── Page content ─────────────────────────────────────────── -->
+  <main id="main-content">
+    {% block content %}{% endblock %}
+  </main>
+
+  <!-- ── Footer ───────────────────────────────────────────────── -->
+  <footer>
+    <p>&copy; 2026 Nexus. All rights reserved.</p>
+  </footer>
+
+  {% block extra_scripts %}{% endblock %}
+
+  <script>
+    /* ── User-menu dropdown ─────────────────────────────────────── */
+    function toggleUserMenu(e) {
+      e.stopPropagation();
+      const btn  = document.getElementById('user-menu-btn');
+      const menu = document.getElementById('user-dropdown');
+      if (!btn || !menu) return;
+      const isOpen = btn.classList.toggle('open');
+      menu.classList.toggle('open', isOpen);
+      btn.setAttribute('aria-expanded', isOpen);
+    }
+
+    /* Close on outside click or Escape */
+    document.addEventListener('click', function (e) {
+      const wrap = document.getElementById('user-menu-wrap');
+      if (!wrap || wrap.contains(e.target)) return;
+      document.getElementById('user-menu-btn')?.classList.remove('open');
+      document.getElementById('user-dropdown')?.classList.remove('open');
+      document.getElementById('user-menu-btn')?.setAttribute('aria-expanded', 'false');
+    });
+
+    document.addEventListener('keydown', function (e) {
+      if (e.key !== 'Escape') return;
+      document.getElementById('user-menu-btn')?.classList.remove('open');
+      document.getElementById('user-dropdown')?.classList.remove('open');
+      document.getElementById('user-menu-btn')?.setAttribute('aria-expanded', 'false');
+    });
+  </script>
+</body>
+</html>

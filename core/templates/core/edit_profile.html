@@ -1,0 +1,346 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Profile · Nexus{% endblock %}
+{% block meta_description %}Update your Nexus profile bio and avatar.{% endblock %}
+
+{% block extra_head %}
+<style>
+  /* ─── Edit profile page ──────────────────────────────────────── */
+  .edit-profile-wrapper {
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    min-height: calc(100vh - 64px);
+    padding: 48px 16px 64px;
+    background:
+      radial-gradient(ellipse 70% 50% at 50% -5%, rgba(124,58,237,.15) 0%, transparent 70%);
+  }
+
+  .edit-profile-card {
+    width: 100%;
+    max-width: 520px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    box-shadow: var(--shadow);
+    animation: slideUp .35s cubic-bezier(.4,0,.2,1) both;
+  }
+
+  @keyframes slideUp {
+    from { opacity:0; transform:translateY(20px); }
+    to   { opacity:1; transform:none; }
+  }
+
+  /* Card header */
+  .edit-card-header {
+    padding: 24px 32px 0;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 20px;
+  }
+
+  .edit-card-header h1 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 4px;
+  }
+
+  .edit-card-header p {
+    font-size: .875rem;
+    color: var(--muted);
+  }
+
+  /* Card body */
+  .edit-card-body { padding: 28px 32px 32px; }
+
+  /* Current avatar preview */
+  .avatar-preview-row {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    margin-bottom: 28px;
+    padding: 16px 20px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+  }
+
+  .avatar-preview {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), #4F46E5);
+    color: #fff;
+    font-size: 1.75rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    text-transform: uppercase;
+    flex-shrink: 0;
+    border: 3px solid var(--accent);
+  }
+
+  .avatar-preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  .avatar-preview-info { flex: 1; min-width: 0; }
+  .avatar-preview-label { font-size: .8125rem; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+  .avatar-preview-hint  { font-size: .8125rem; color: var(--muted); }
+
+  /* Form fields */
+  .field-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 20px;
+  }
+
+  .field-label {
+    font-size: .8125rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    color: var(--muted);
+  }
+
+  .field-textarea {
+    width: 100%;
+    background: var(--bg);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 12px 14px;
+    font-family: inherit;
+    font-size: .9375rem;
+    line-height: 1.6;
+    resize: vertical;
+    min-height: 100px;
+    outline: none;
+    transition: border-color var(--transition), box-shadow var(--transition);
+  }
+  .field-textarea::placeholder { color: var(--muted); opacity: .6; }
+  .field-textarea:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(124,58,237,.2);
+  }
+  .field-textarea.is-invalid { border-color: var(--error); }
+
+  .field-char-count {
+    font-size: .8125rem;
+    color: var(--muted);
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+  .field-char-count.warn { color: #FBBF24; }
+  .field-char-count.over { color: var(--error); }
+
+  /* File upload */
+  .file-upload-label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 11px 16px;
+    background: var(--bg);
+    border: 1px dashed var(--border);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: border-color var(--transition), background var(--transition);
+    font-size: .9375rem;
+    color: var(--muted);
+  }
+  .file-upload-label:hover {
+    border-color: var(--accent);
+    background: rgba(124,58,237,.05);
+    color: var(--accent-light);
+  }
+  .file-upload-label input[type="file"] { display: none; }
+  .file-name-display { font-size: .875rem; color: var(--accent-light); font-weight: 500; }
+
+  /* Error display */
+  .field-errors { list-style: none; display: flex; flex-direction: column; gap: 3px; }
+  .field-errors li { font-size: .8125rem; color: var(--error); }
+
+  /* Actions */
+  .edit-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 32px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+  }
+
+  .btn--cancel {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    text-align: center;
+    padding: 11px 20px;
+    border-radius: var(--radius-sm);
+    font-size: .9375rem;
+    font-weight: 500;
+    transition: all var(--transition);
+  }
+  .btn--cancel:hover { background: var(--surface-2); color: var(--text); border-color: var(--muted); }
+
+  @media (max-width: 560px) {
+    .edit-card-header, .edit-card-body { padding-left: 20px; padding-right: 20px; }
+  }
+</style>
+{% endblock %}
+
+
+{% block content %}
+<div class="edit-profile-wrapper">
+  <div class="edit-profile-card">
+
+    <div class="edit-card-header">
+      <h1>Edit Profile</h1>
+      <p>Update your bio and profile picture.</p>
+    </div>
+
+    <div class="edit-card-body">
+
+      {# Current avatar preview #}
+      <div class="avatar-preview-row">
+        <div class="avatar-preview" id="avatar-preview-img" aria-label="Current avatar">
+          {% if form.instance.avatar %}
+            <img src="{{ form.instance.avatar.url }}" alt="Current avatar" id="preview-img" />
+          {% else %}
+            <span id="preview-initial">{{ request.user.username|first|upper }}</span>
+          {% endif %}
+        </div>
+        <div class="avatar-preview-info">
+          <div class="avatar-preview-label">Profile picture</div>
+          <div class="avatar-preview-hint">JPG, PNG or GIF · max 5 MB</div>
+        </div>
+      </div>
+
+      <form
+        method="post"
+        action="{% url 'core:edit_profile' %}"
+        enctype="multipart/form-data"
+        id="edit-profile-form"
+        novalidate
+      >
+        {% csrf_token %}
+
+        {# Bio field #}
+        <div class="field-group">
+          <label class="field-label" for="bio-input">Bio</label>
+          <textarea
+            id="bio-input"
+            name="{{ form.bio.html_name }}"
+            maxlength="500"
+            class="field-textarea {% if form.bio.errors %}is-invalid{% endif %}"
+            aria-describedby="{% if form.bio.errors %}bio-errors{% endif %} bio-char-count"
+          >{{ form.bio.value|default:'' }}</textarea>
+          <span class="field-char-count" id="bio-char-count" aria-live="polite">
+            {{ form.bio.value|default:''|length }} / 500
+          </span>
+          {% if form.bio.errors %}
+            <ul class="field-errors" id="bio-errors" role="alert">
+              {% for err in form.bio.errors %}<li>{{ err }}</li>{% endfor %}
+            </ul>
+          {% endif %}
+        </div>
+
+        {# Avatar upload #}
+        <div class="field-group">
+          <span class="field-label" id="avatar-upload-label">Avatar image</span>
+          <label
+            class="file-upload-label"
+            for="avatar-input"
+            aria-labelledby="avatar-upload-label"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="17 8 12 3 7 8"/>
+              <line x1="12" y1="3" x2="12" y2="15"/>
+            </svg>
+            <span id="file-name-display">
+              {% if form.instance.avatar %}
+                Current photo — click to replace
+              {% else %}
+                Choose a photo…
+              {% endif %}
+            </span>
+            <input
+              type="file"
+              id="avatar-input"
+              name="{{ form.avatar.html_name }}"
+              accept="image/*"
+            />
+          </label>
+          {% if form.avatar.errors %}
+            <ul class="field-errors" role="alert">
+              {% for err in form.avatar.errors %}<li>{{ err }}</li>{% endfor %}
+            </ul>
+          {% endif %}
+        </div>
+
+        {# Actions #}
+        <div class="edit-actions">
+          <button type="submit" class="btn btn--primary" style="flex:1;padding:12px;" id="save-profile-btn">
+            Save changes
+          </button>
+          <a href="{% url 'core:profile' request.user.username %}" class="btn--cancel">
+            Cancel
+          </a>
+        </div>
+
+      </form>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
+
+
+{% block extra_scripts %}
+<script>
+  /* ── Bio character counter ──────────────────────────────────── */
+  const bioTextarea = document.getElementById('bio-input');
+  const bioCounter  = document.getElementById('bio-char-count');
+
+  if (bioTextarea) {
+    bioTextarea.addEventListener('input', () => {
+      const len = bioTextarea.value.length;
+      bioCounter.textContent = `${len} / 500`;
+      bioCounter.className = 'field-char-count';
+      if (len >= 500) bioCounter.classList.add('over');
+      else if (len >= 440) bioCounter.classList.add('warn');
+    });
+  }
+
+  /* ── Avatar file picker feedback + live preview ─────────────── */
+  const avatarInput   = document.getElementById('avatar-input');
+  const fileNameLabel = document.getElementById('file-name-display');
+  const previewWrap   = document.getElementById('avatar-preview-img');
+
+  if (avatarInput) {
+    avatarInput.addEventListener('change', () => {
+      const file = avatarInput.files[0];
+      if (!file) return;
+
+      // Update label text
+      const name = file.name;
+      fileNameLabel.textContent = name.length > 30 ? name.slice(0, 29) + '…' : name;
+
+      // Live preview
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        previewWrap.innerHTML = `<img src="${e.target.result}" alt="New avatar preview" style="width:100%;height:100%;object-fit:cover;display:block;" />`;
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+</script>
+{% endblock %}
